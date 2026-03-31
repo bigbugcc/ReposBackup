@@ -1,0 +1,97 @@
+# Backup the current repository to cloud storage.
+#
+# Required secrets (configure in Settings → Secrets and variables → Actions):
+#
+#   For Cloudflare R2:
+#     R2_ACCOUNT_ID, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME
+#
+#   For Tencent Cloud COS:
+#     COS_SECRET_ID, COS_SECRET_KEY, COS_BUCKET_NAME, COS_REGION
+#
+#   For Alibaba Cloud OSS:
+#     OSS_ACCESS_KEY_ID, OSS_ACCESS_KEY_SECRET, OSS_BUCKET_NAME, OSS_ENDPOINT
+#
+#   For FTP:
+#     FTP_HOST, FTP_USERNAME, FTP_PASSWORD
+#
+#   For WebDAV:
+#     WEBDAV_URL, WEBDAV_USERNAME, WEBDAV_PASSWORD
+
+name: Backup Current Repository
+
+on:
+  # Run daily at 02:00 UTC
+  schedule:
+    - cron: "0 2 * * *"
+  # Allow manual trigger with optional overrides
+  workflow_dispatch:
+    inputs:
+      storage_type:
+        description: "Storage type (r2 | tencent_cos | aliyun_oss | ftp | webdav)"
+        required: false
+        default: "r2"
+      backup_branch:
+        description: 'Branch to backup, or "all" for every branch'
+        required: false
+        default: "all"
+
+jobs:
+  backup:
+    name: Backup repository
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      # ── Example: Cloudflare R2 ─────────────────────────────────────────────
+      - name: Backup to Cloudflare R2
+        uses: bigbugcc/ReposBackup@main
+        with:
+          storage_type: ${{ github.event.inputs.storage_type || 'r2' }}
+          backup_branch: ${{ github.event.inputs.backup_branch || 'all' }}
+
+          r2_account_id: ${{ secrets.R2_ACCOUNT_ID }}
+          r2_access_key_id: ${{ secrets.R2_ACCESS_KEY_ID }}
+          r2_secret_access_key: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          r2_bucket_name: ${{ secrets.R2_BUCKET_NAME }}
+
+      # ── Example: Tencent Cloud COS (uncomment to use) ──────────────────────
+      # - name: Backup to Tencent COS
+      #   uses: bigbugcc/ReposBackup@main
+      #   with:
+      #     storage_type: tencent_cos
+      #     backup_branch: all
+      #     cos_secret_id: ${{ secrets.COS_SECRET_ID }}
+      #     cos_secret_key: ${{ secrets.COS_SECRET_KEY }}
+      #     cos_bucket_name: ${{ secrets.COS_BUCKET_NAME }}
+      #     cos_region: ${{ secrets.COS_REGION }}
+
+      # ── Example: Alibaba Cloud OSS (uncomment to use) ──────────────────────
+      # - name: Backup to Alibaba OSS
+      #   uses: bigbugcc/ReposBackup@main
+      #   with:
+      #     storage_type: aliyun_oss
+      #     backup_branch: all
+      #     oss_access_key_id: ${{ secrets.OSS_ACCESS_KEY_ID }}
+      #     oss_access_key_secret: ${{ secrets.OSS_ACCESS_KEY_SECRET }}
+      #     oss_bucket_name: ${{ secrets.OSS_BUCKET_NAME }}
+      #     oss_endpoint: ${{ secrets.OSS_ENDPOINT }}
+
+      # ── Example: FTP (uncomment to use) ────────────────────────────────────
+      # - name: Backup to FTP
+      #   uses: bigbugcc/ReposBackup@main
+      #   with:
+      #     storage_type: ftp
+      #     backup_branch: all
+      #     ftp_host: ${{ secrets.FTP_HOST }}
+      #     ftp_username: ${{ secrets.FTP_USERNAME }}
+      #     ftp_password: ${{ secrets.FTP_PASSWORD }}
+
+      # ── Example: WebDAV (uncomment to use) ─────────────────────────────────
+      # - name: Backup to WebDAV
+      #   uses: bigbugcc/ReposBackup@main
+      #   with:
+      #     storage_type: webdav
+      #     backup_branch: all
+      #     webdav_url: ${{ secrets.WEBDAV_URL }}
+      #     webdav_username: ${{ secrets.WEBDAV_USERNAME }}
+      #     webdav_password: ${{ secrets.WEBDAV_PASSWORD }}
