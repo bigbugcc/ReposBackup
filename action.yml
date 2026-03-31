@@ -1,0 +1,194 @@
+name: "ReposBackup"
+description: >
+  Back up GitHub repository code to Cloudflare R2, Tencent Cloud COS,
+  Alibaba Cloud OSS, FTP, or WebDAV storage. Supports backing up the
+  current repository or a batch of repositories, with optional full
+  (all-branch) or single-branch archives.
+author: "bigbugcc"
+
+branding:
+  icon: "archive"
+  color: "blue"
+
+inputs:
+  # ── Storage selection ──────────────────────────────────────────────────────
+  storage_type:
+    description: >
+      Storage backend to use.
+      Accepted values: r2 | tencent_cos | aliyun_oss | ftp | webdav
+    required: true
+
+  # ── Cloudflare R2 ──────────────────────────────────────────────────────────
+  r2_account_id:
+    description: "Cloudflare Account ID"
+    required: false
+    default: ""
+  r2_access_key_id:
+    description: "R2 Access Key ID"
+    required: false
+    default: ""
+  r2_secret_access_key:
+    description: "R2 Secret Access Key"
+    required: false
+    default: ""
+  r2_bucket_name:
+    description: "R2 Bucket name"
+    required: false
+    default: ""
+  r2_bucket_path:
+    description: "Path prefix inside the R2 bucket (optional)"
+    required: false
+    default: ""
+
+  # ── Tencent Cloud COS ──────────────────────────────────────────────────────
+  cos_secret_id:
+    description: "Tencent Cloud SecretId"
+    required: false
+    default: ""
+  cos_secret_key:
+    description: "Tencent Cloud SecretKey"
+    required: false
+    default: ""
+  cos_bucket_name:
+    description: "COS bucket name (format: <name>-<AppId>, e.g. mybucket-1234567890)"
+    required: false
+    default: ""
+  cos_region:
+    description: "COS region (e.g. ap-guangzhou)"
+    required: false
+    default: ""
+  cos_bucket_path:
+    description: "Path prefix inside the COS bucket (optional)"
+    required: false
+    default: ""
+
+  # ── Alibaba Cloud OSS ──────────────────────────────────────────────────────
+  oss_access_key_id:
+    description: "Alibaba Cloud Access Key ID"
+    required: false
+    default: ""
+  oss_access_key_secret:
+    description: "Alibaba Cloud Access Key Secret"
+    required: false
+    default: ""
+  oss_bucket_name:
+    description: "OSS bucket name"
+    required: false
+    default: ""
+  oss_endpoint:
+    description: "OSS endpoint (e.g. oss-cn-hangzhou.aliyuncs.com)"
+    required: false
+    default: ""
+  oss_bucket_path:
+    description: "Path prefix inside the OSS bucket (optional)"
+    required: false
+    default: ""
+
+  # ── FTP ───────────────────────────────────────────────────────────────────
+  ftp_host:
+    description: "FTP server hostname or IP"
+    required: false
+    default: ""
+  ftp_port:
+    description: "FTP server port (default: 21)"
+    required: false
+    default: "21"
+  ftp_username:
+    description: "FTP username"
+    required: false
+    default: ""
+  ftp_password:
+    description: "FTP password"
+    required: false
+    default: ""
+  ftp_path:
+    description: "Remote base path on the FTP server (default: /)"
+    required: false
+    default: "/"
+
+  # ── WebDAV ────────────────────────────────────────────────────────────────
+  webdav_url:
+    description: "WebDAV server URL (e.g. https://dav.example.com)"
+    required: false
+    default: ""
+  webdav_username:
+    description: "WebDAV username"
+    required: false
+    default: ""
+  webdav_password:
+    description: "WebDAV password"
+    required: false
+    default: ""
+  webdav_path:
+    description: "Remote base path on the WebDAV server (default: /)"
+    required: false
+    default: "/"
+
+  # ── Backup settings ───────────────────────────────────────────────────────
+  repos:
+    description: >
+      Newline-separated list of repositories to back up
+      (format: owner/repo, one per line).
+      Leave empty to back up the repository in which this action runs.
+    required: false
+    default: ""
+  backup_branch:
+    description: >
+      Branch to back up, or "all" to back up every branch.
+      Default: all
+    required: false
+    default: "all"
+  github_token:
+    description: "GitHub token used to clone repositories"
+    required: false
+    default: ${{ github.token }}
+  generate_report:
+    description: "Print a Markdown backup report to the workflow log (true/false)"
+    required: false
+    default: "true"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+
+    - name: Install Python dependencies
+      shell: bash
+      run: pip install -q -r "${{ github.action_path }}/requirements.txt"
+
+    - name: Run backup
+      shell: bash
+      run: python -u "${{ github.action_path }}/src/backup.py"
+      env:
+        STORAGE_TYPE: ${{ inputs.storage_type }}
+        R2_ACCOUNT_ID: ${{ inputs.r2_account_id }}
+        R2_ACCESS_KEY_ID: ${{ inputs.r2_access_key_id }}
+        R2_SECRET_ACCESS_KEY: ${{ inputs.r2_secret_access_key }}
+        R2_BUCKET_NAME: ${{ inputs.r2_bucket_name }}
+        R2_BUCKET_PATH: ${{ inputs.r2_bucket_path }}
+        COS_SECRET_ID: ${{ inputs.cos_secret_id }}
+        COS_SECRET_KEY: ${{ inputs.cos_secret_key }}
+        COS_BUCKET_NAME: ${{ inputs.cos_bucket_name }}
+        COS_REGION: ${{ inputs.cos_region }}
+        COS_BUCKET_PATH: ${{ inputs.cos_bucket_path }}
+        OSS_ACCESS_KEY_ID: ${{ inputs.oss_access_key_id }}
+        OSS_ACCESS_KEY_SECRET: ${{ inputs.oss_access_key_secret }}
+        OSS_BUCKET_NAME: ${{ inputs.oss_bucket_name }}
+        OSS_ENDPOINT: ${{ inputs.oss_endpoint }}
+        OSS_BUCKET_PATH: ${{ inputs.oss_bucket_path }}
+        FTP_HOST: ${{ inputs.ftp_host }}
+        FTP_PORT: ${{ inputs.ftp_port }}
+        FTP_USERNAME: ${{ inputs.ftp_username }}
+        FTP_PASSWORD: ${{ inputs.ftp_password }}
+        FTP_PATH: ${{ inputs.ftp_path }}
+        WEBDAV_URL: ${{ inputs.webdav_url }}
+        WEBDAV_USERNAME: ${{ inputs.webdav_username }}
+        WEBDAV_PASSWORD: ${{ inputs.webdav_password }}
+        WEBDAV_PATH: ${{ inputs.webdav_path }}
+        BACKUP_REPOS: ${{ inputs.repos }}
+        BACKUP_BRANCH: ${{ inputs.backup_branch }}
+        GITHUB_TOKEN: ${{ inputs.github_token }}
+        GENERATE_REPORT: ${{ inputs.generate_report }}
